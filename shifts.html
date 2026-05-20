@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMS — Shifts</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="mock.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800">
+  <header class="bg-slate-900 text-slate-100">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+      <div class="text-lg font-bold">EMS<span class="text-blue-400">.</span> <span class="ml-2 text-sm font-normal text-slate-400">Manager Console</span></div>
+      <div class="flex items-center gap-3">
+        <span id="userLabel" class="text-sm text-slate-300"></span>
+        <button id="logoutBtn" class="rounded-lg bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Logout</button>
+      </div>
+    </div>
+    <nav class="border-t border-slate-800">
+      <div class="mx-auto flex max-w-7xl flex-wrap gap-1 px-6 py-2 text-sm">
+        <a href="index.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Dashboard</a>
+        <a href="employees.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Employees</a>
+        <a href="management.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Management</a>
+        <a href="team-leads.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Team Leads</a>
+        <a href="smes.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">SMEs</a>
+        <a href="trainings.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Trainings</a>
+        <a href="shifts.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Shifts</a>
+        <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
+        <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
+        <a href="lookups.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Lookups</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-7xl p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-slate-800">Shifts</h1>
+      <button id="newBtn" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">+ New</button>
+    </div>
+    <div class="mb-3 flex items-center justify-between gap-2">
+      <input id="search" placeholder="Search…" class="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      <div id="countLabel" class="text-sm text-slate-500"></div>
+    </div>
+    <div class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <tr>
+            <th class="px-4 py-3">SHIFT_ID</th>
+            <th class="px-4 py-3">Room</th>
+            <th class="px-4 py-3">Value</th>
+            <th class="px-4 py-3">Start</th>
+            <th class="px-4 py-3">End</th>
+            <th class="px-4 py-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <dialog id="dlg" class="rounded-xl p-0 backdrop:bg-slate-900/50">
+    <form id="frm" class="w-[40rem] max-w-[95vw] bg-white">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 id="dlgTitle" class="text-lg font-semibold text-slate-800">Shifts</h2>
+        <button type="button" id="closeBtn" class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">✕</button>
+      </div>
+      <div class="grid grid-cols-1 gap-4 px-6 py-5 md:grid-cols-2">
+        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Shift ID *</label>
+          <input type="text" name="shift_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
+        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Room</label>
+          <select name="room_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select></div>
+        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Value *</label>
+          <input type="text" name="shift_value" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
+        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Start *</label>
+          <input type="datetime-local" name="shift_start" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
+        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">End *</label>
+          <input type="datetime-local" name="shift_end" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
+      </div>
+      <div id="frmErr" class="mx-6 mb-3 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"></div>
+      <div class="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-3">
+        <button type="button" id="cancelBtn" class="rounded-lg bg-white px-4 py-2 text-sm ring-1 ring-slate-300 hover:bg-slate-100">Cancel</button>
+        <button type="submit" id="saveBtn" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <script>
+    const API = 'http://localhost:3000';
+    const token = localStorage.getItem('ems_token');
+    if (!token) location.replace('login.html');
+    const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
+    document.getElementById('userLabel').textContent = user.username || 'Manager';
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); location.href = 'login.html'; });
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function fmtDT(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleString(); }
+    function toLocalInput(v) { if (!v) return ''; const d = new Date(v); if (isNaN(d)) return ''; const pad = n => String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+    async function api(method, path, body) {
+      const opts = { method, headers: { Authorization: 'Bearer ' + token } };
+      if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+      const res = await fetch(API + path, opts).catch(() => { throw new Error('Network error — is the backend running?'); });
+      if (res.status === 401) { localStorage.clear(); location.href = 'login.html'; throw new Error('unauth'); }
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null;
+      if (!res.ok) throw new Error((data && data.message) || `${res.status} ${res.statusText}`);
+      return data;
+    }
+
+    let rows = []; let editingId = null; let editingPrev = null;
+    const dlg = document.getElementById('dlg');
+    const frm = document.getElementById('frm');
+    const frmErr = document.getElementById('frmErr');
+
+    function badgeClass(v) {
+      if (v === 'Active') return 'bg-green-50 text-green-700 ring-green-200';
+      if (v === 'Inactive') return 'bg-slate-50 text-slate-700 ring-slate-200';
+      if (v === 'On Leave') return 'bg-amber-50 text-amber-700 ring-amber-200';
+      if (v === 'Terminated') return 'bg-red-50 text-red-700 ring-red-200';
+      return 'bg-slate-50 text-slate-700 ring-slate-200';
+    }
+
+    function render() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const keys = ["shift_id","room_id","shift_value","shift_start","shift_end"];
+      const filtered = !q ? rows : rows.filter((r) => keys.some((k) => String(r[k] ?? '').toLowerCase().includes(q)));
+      filtered.sort((a,b) => String(a.shift_id).localeCompare(String(b.shift_id)));
+      document.getElementById('countLabel').textContent = `${filtered.length} record(s)`;
+      const tbody = document.getElementById('tbody');
+      if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`; return; }
+      tbody.innerHTML = filtered.map((r) => `
+        <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono">${esc(r.shift_id)}</td>
+            <td class="px-4 py-3">${esc(r.room_id)}</td>
+            <td class="px-4 py-3">${esc(r.shift_value)}</td>
+            <td class="px-4 py-3">${esc(fmtDT(r.shift_start))}</td>
+            <td class="px-4 py-3">${esc(fmtDT(r.shift_end))}</td>
+          <td class="px-4 py-3 text-right">
+            <button data-act="edit" data-id="${esc(r.shift_id)}" class="rounded bg-white px-2.5 py-1 text-xs ring-1 ring-slate-300 hover:bg-slate-50">Edit</button>
+            <button data-act="del"  data-id="${esc(r.shift_id)}" class="ml-1 rounded bg-red-600 px-2.5 py-1 text-xs text-white hover:bg-red-700">Delete</button>
+          </td>
+        </tr>`).join('');
+      tbody.querySelectorAll('button[data-act]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const id = b.getAttribute('data-id');
+          if (b.getAttribute('data-act') === 'edit') openForm(rows.find((x) => String(x.shift_id) === id));
+          else deleteRow(id);
+        });
+      });
+    }
+
+    async function loadRows() {
+      try {
+        const data = await api('GET', '/api/shifts');
+        rows = Array.isArray(data) ? data : (data.items || []);
+        render();
+      } catch (e) {
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    async function loadFKs() {
+      try {
+        const data = await api('GET', '/api/rooms');
+        const items = Array.isArray(data) ? data : (data.items || []);
+        const sel = frm.querySelector('select[name="room_id"]');
+        if (sel) {
+          sel.innerHTML = '<option value="">— select —</option>';
+          items.forEach((it) => {
+            const opt = document.createElement('option');
+            opt.value = it.room_id; opt.textContent = `${it.room_id} — ${it.room_name ?? ""}`;
+            sel.appendChild(opt);
+          });
+        }
+      } catch {}
+    }
+
+    async function openForm(row) {
+      editingId = row ? row.shift_id : null;
+      editingPrev = row ? Object.assign({}, row) : null;
+      document.getElementById('dlgTitle').textContent = row ? 'Edit Shift' : 'New Shift';
+      frmErr.classList.add('hidden'); frmErr.textContent = '';
+      frm.reset();
+      await loadFKs();
+      if (row) {
+        Object.keys(row).forEach((k) => {
+          const el = frm.elements[k];
+          if (!el || el.type === 'file') return;
+          if (el.type === 'datetime-local') return;
+          if (k === 'password') return;
+          el.value = row[k] ?? '';
+        });
+        if (row.shift_start) frm.elements.shift_start.value = toLocalInput(row.shift_start);
+        if (row.shift_end) frm.elements.shift_end.value = toLocalInput(row.shift_end);
+        frm.elements.shift_id.value = row.shift_id;
+        frm.elements.shift_id.disabled = true;
+      } else {
+
+        frm.elements.shift_id.disabled = false;
+      }
+      dlg.showModal();
+    }
+
+    document.getElementById('newBtn').addEventListener('click', () => openForm(null));
+    document.getElementById('cancelBtn').addEventListener('click', () => dlg.close());
+    document.getElementById('closeBtn').addEventListener('click', () => dlg.close());
+    document.getElementById('search').addEventListener('input', render);
+
+    frm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      frmErr.classList.add('hidden');
+      const fd = new FormData(frm);
+      const body = {};
+      fd.forEach((v, k) => { body[k] = v === '' ? null : v; });
+
+      if (body.shift_start) body.shift_start = new Date(body.shift_start).toISOString();
+      if (body.shift_end) body.shift_end = new Date(body.shift_end).toISOString();
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+      try {
+      if (body.shift_start && body.shift_end && new Date(body.shift_start) >= new Date(body.shift_end)) { throw new Error('End must be after Start'); }
+        let saved;
+        if (editingId == null) saved = await api('POST', '/api/shifts', body);
+        else saved = await api('PUT', '/api/shifts/' + encodeURIComponent(editingId), body);
+        dlg.close(); await loadRows();
+      } catch (err) { frmErr.textContent = err.message; frmErr.classList.remove('hidden'); }
+      finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+    });
+
+    async function deleteRow(id) {
+      const r = rows.find((x) => String(x.shift_id) === String(id));
+      const label = r ? (r.shift_id) : 'shifts ' + id;
+      try {
+        await window.emsDeleteWithCascade('shifts', id, label);
+        await loadRows();
+      } catch (err) {
+        if (err.message !== 'cancelled') alert(err.message);
+      }
+    }
+
+    loadRows();
+  </script>
+</body>
+</html>

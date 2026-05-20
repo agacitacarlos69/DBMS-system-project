@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMS — Sign In</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="mock.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800">
+  <main class="flex min-h-screen items-center justify-center p-6">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-slate-200">
+      <div class="mb-6 text-center">
+        <div class="text-3xl font-bold text-slate-900">EMS<span class="text-blue-600">.</span></div>
+        <p class="mt-1 text-sm text-slate-500">Manager Console — Sign in</p>
+      </div>
+      <form id="frm" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Username</label>
+          <input name="username" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+          <input name="password" type="password" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        </div>
+        <div id="errBox" class="hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"></div>
+        <button id="submitBtn" type="submit" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Sign in</button>
+      </form>
+      <p class="mt-4 text-center text-xs text-slate-400">Demo: any username/password works.</p>
+    </div>
+  </main>
+  <script>
+    const API = 'http://localhost:3000';
+    if (localStorage.getItem('ems_token')) location.replace('index.html');
+    const frm = document.getElementById('frm');
+    const errBox = document.getElementById('errBox');
+    frm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBox.classList.add('hidden');
+      const fd = new FormData(frm);
+      const body = { username: fd.get('username'), password: fd.get('password') };
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = 'Signing in…';
+      try {
+        const res = await fetch(API + '/api/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).catch(() => { throw new Error('Network error — is the backend running?'); });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : null;
+        if (!res.ok) throw new Error((data && data.message) || 'Sign-in failed');
+        localStorage.setItem('ems_token', data.token);
+        localStorage.setItem('ems_user', JSON.stringify(data.user || {}));
+        location.replace('index.html');
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove('hidden');
+      } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+    });
+  </script>
+</body>
+</html>

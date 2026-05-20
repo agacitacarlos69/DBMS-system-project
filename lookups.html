@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMS — Lookups</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="mock.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800">
+  <header class="bg-slate-900 text-slate-100">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+      <div class="text-lg font-bold">EMS<span class="text-blue-400">.</span> <span class="ml-2 text-sm font-normal text-slate-400">Manager Console</span></div>
+      <div class="flex items-center gap-3">
+        <span id="userLabel" class="text-sm text-slate-300"></span>
+        <button id="logoutBtn" class="rounded-lg bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Logout</button>
+      </div>
+    </div>
+    <nav class="border-t border-slate-800">
+      <div class="mx-auto flex max-w-7xl flex-wrap gap-1 px-6 py-2 text-sm">
+        <a href="index.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Dashboard</a>
+        <a href="employees.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Employees</a>
+        <a href="management.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Management</a>
+        <a href="team-leads.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Team Leads</a>
+        <a href="smes.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">SMEs</a>
+        <a href="trainings.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Trainings</a>
+        <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
+        <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
+        <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
+        <a href="lookups.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Lookups</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-7xl p-6">
+    <h1 class="mb-1 text-2xl font-bold text-slate-800">Lookups</h1>
+    <p class="mb-6 text-sm text-slate-500">Reference data (read-only).</p>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 class="mb-3 text-lg font-semibold text-slate-800">Roles</h2>
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <tr><th class="px-3 py-2">Code</th><th class="px-3 py-2">Value</th></tr>
+          </thead>
+          <tbody id="rolesTbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </section>
+      <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 class="mb-3 text-lg font-semibold text-slate-800">Tenurity</h2>
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <tr><th class="px-3 py-2">Code</th><th class="px-3 py-2">Value</th></tr>
+          </thead>
+          <tbody id="tenTbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+  <script>
+    const API = 'http://localhost:3000';
+    const token = localStorage.getItem('ems_token');
+    if (!token) location.replace('login.html');
+    const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
+    document.getElementById('userLabel').textContent = user.username || 'Manager';
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); location.href = 'login.html'; });
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function fmtDT(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleString(); }
+    function toLocalInput(v) { if (!v) return ''; const d = new Date(v); if (isNaN(d)) return ''; const pad = n => String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+    async function api(method, path, body) {
+      const opts = { method, headers: { Authorization: 'Bearer ' + token } };
+      if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+      const res = await fetch(API + path, opts).catch(() => { throw new Error('Network error — is the backend running?'); });
+      if (res.status === 401) { localStorage.clear(); location.href = 'login.html'; throw new Error('unauth'); }
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null;
+      if (!res.ok) throw new Error((data && data.message) || `${res.status} ${res.statusText}`);
+      return data;
+    }
+
+    async function load(path, tbodyId, kCol, lCol) {
+      const tbody = document.getElementById(tbodyId);
+      try {
+        const items = await api('GET', path);
+        const arr = Array.isArray(items) ? items : (items.items || []);
+        if (arr.length === 0) { tbody.innerHTML = `<tr><td colspan="2" class="px-3 py-4 text-center text-slate-500">No entries</td></tr>`; return; }
+        tbody.innerHTML = arr.map((r) => `<tr><td class="px-3 py-2 font-mono text-slate-700">${esc(r[kCol])}</td><td class="px-3 py-2 text-slate-700">${esc(r[lCol])}</td></tr>`).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="2" class="px-3 py-4 text-center text-red-600">${esc(e.message)}</td></tr>`;
+      }
+    }
+    load('/api/roles', 'rolesTbody', 'role_code', 'role_type');
+    load('/api/tenurities', 'tenTbody', 'tenurity_code', 'class');
+  </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMS — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="mock.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800">
+  <header class="bg-slate-900 text-slate-100">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+      <div class="text-lg font-bold">EMS<span class="text-blue-400">.</span> <span class="ml-2 text-sm font-normal text-slate-400">Manager Console</span></div>
+      <div class="flex items-center gap-3">
+        <span id="userLabel" class="text-sm text-slate-300"></span>
+        <button id="logoutBtn" class="rounded-lg bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Logout</button>
+      </div>
+    </div>
+    <nav class="border-t border-slate-800">
+      <div class="mx-auto flex max-w-7xl flex-wrap gap-1 px-6 py-2 text-sm">
+        <a href="index.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Dashboard</a>
+        <a href="employees.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Employees</a>
+        <a href="management.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Management</a>
+        <a href="team-leads.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Team Leads</a>
+        <a href="smes.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">SMEs</a>
+        <a href="trainings.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Trainings</a>
+        <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
+        <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
+        <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
+        <a href="lookups.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Lookups</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-7xl p-6">
+    <h1 class="mb-1 text-2xl font-bold text-slate-800">Dashboard</h1>
+    <p class="mb-6 text-sm text-slate-500">Quick overview of all records.</p>
+    <div id="cards" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
+  </main>
+  <script>
+    const API = 'http://localhost:3000';
+    const token = localStorage.getItem('ems_token');
+    if (!token) location.replace('login.html');
+    const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
+    document.getElementById('userLabel').textContent = user.username || 'Manager';
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); location.href = 'login.html'; });
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function fmtDT(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleString(); }
+    function toLocalInput(v) { if (!v) return ''; const d = new Date(v); if (isNaN(d)) return ''; const pad = n => String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+    async function api(method, path, body) {
+      const opts = { method, headers: { Authorization: 'Bearer ' + token } };
+      if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+      const res = await fetch(API + path, opts).catch(() => { throw new Error('Network error — is the backend running?'); });
+      if (res.status === 401) { localStorage.clear(); location.href = 'login.html'; throw new Error('unauth'); }
+      const text = await res.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null;
+      if (!res.ok) throw new Error((data && data.message) || `${res.status} ${res.statusText}`);
+      return data;
+    }
+
+    const items = [
+      ['Employees',  '/api/employees',  'employees.html'],
+      ['Management', '/api/management', 'management.html'],
+      ['Team Leads', '/api/team-leads', 'team-leads.html'],
+      ['SMEs',       '/api/smes',       'smes.html'],
+      ['Trainings',  '/api/trainings',  'trainings.html'],
+      ['Shifts',     '/api/shifts',     'shifts.html'],
+      ['Rooms',      '/api/rooms',      'rooms.html'],
+      ['Users',      '/api/users',      'users.html'],
+    ];
+    const host = document.getElementById('cards');
+    items.forEach(([label, path, href]) => {
+      const card = document.createElement('a');
+      card.href = href;
+      card.className = 'block rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 hover:ring-blue-300';
+      card.innerHTML = `<div class="text-sm font-medium text-slate-500">${label}</div>
+        <div class="mt-2 text-3xl font-bold text-slate-800" data-count>—</div>`;
+      host.appendChild(card);
+      api('GET', path).then((data) => {
+        const items = Array.isArray(data) ? data : (data.items || []);
+        card.querySelector('[data-count]').textContent = items.length;
+      }).catch(() => { card.querySelector('[data-count]').textContent = '?'; });
+    });
+  </script>
+</body>
+</html>
