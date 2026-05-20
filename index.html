@@ -38,7 +38,7 @@
     <div id="cards" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
   </main>
   <script>
-    const API = 'http://localhost:3000';
+    const API = 'http://localhost:5000';
     const token = localStorage.getItem('ems_token');
     if (!token) location.replace('login.html');
     const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
