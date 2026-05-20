@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000;
 // ===== MIDDLEWARE =====
 app.use(cors());          
 app.use(express.json());  
-app.use(express.static('public')); // Serves frontend folder assets safely if placed under a public path
+app.use(express.static('public')); // use this if pinagsama-sama yung mga html file in one folder. "public" is the folder name.
 
 // ===== DATABASE CONNECTION =====
 const pool = new Pool({
