@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EMS — Employees</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="mock.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
   <header class="bg-slate-900 text-slate-100">
@@ -70,14 +69,14 @@
           <input type="text" name="emp_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Full Name *</label>
           <input type="text" name="full_name" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
-        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Management</label>
-          <select name="mgmt_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select></div>
+        <div><label class="mb-1 block text-sm font-medium text-slate-700">Management Assignment *</label>
+          <select name="mgmt_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white"></select></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Role *</label>
-          <select name="role" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select></div>
+          <select name="role" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="Core">Core</option><option value="Project">Project</option><option value="SME">SME</option><option value="Team Lead">Team Lead</option></select></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Tenurity *</label>
-          <select name="tenurity" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select></div>
+          <select name="tenurity" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="New Joiner">New Joiner</option><option value="Repeater">Repeater</option><option value="Returnee">Returnee</option></select></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Status *</label>
-          <select name="status" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">— select —</option><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="On Leave">On Leave</option><option value="Terminated">Terminated</option></select></div>
+          <select name="status" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">— select —</option><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Personal Email</label>
           <input type="email" name="personal_email" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Contact Number</label>
@@ -121,8 +120,6 @@
     function badgeClass(v) {
       if (v === 'Active') return 'bg-green-50 text-green-700 ring-green-200';
       if (v === 'Inactive') return 'bg-slate-50 text-slate-700 ring-slate-200';
-      if (v === 'On Leave') return 'bg-amber-50 text-amber-700 ring-amber-200';
-      if (v === 'Terminated') return 'bg-red-50 text-red-700 ring-red-200';
       return 'bg-slate-50 text-slate-700 ring-slate-200';
     }
 
@@ -179,7 +176,7 @@
             sel.appendChild(opt);
           });
         }
-      } catch {}
+      } catch {} 
       try {
         const data = await api('GET', '/api/roles');
         const items = Array.isArray(data) ? data : (data.items || []);
@@ -262,15 +259,25 @@
     });
 
     async function deleteRow(id) {
-      const r = rows.find((x) => String(x.emp_id) === String(id));
-      const label = r ? (r.full_name + " (" + r.emp_id + ")") : 'employees ' + id;
-      try {
-        await window.emsDeleteWithCascade('employees', id, label);
-        await loadRows();
-      } catch (err) {
-        if (err.message !== 'cancelled') alert(err.message);
-      }
-    }
+  // 1. Find the employee details from the local array to make a friendly confirmation message
+  const r = rows.find((x) => String(x.emp_id) === String(id));
+  const label = r ? `${r.full_name} (${r.emp_id})` : `Employee ${id}`;
+  
+  // 2. Use a standard native browser alert confirmation box
+  if (!confirm(`Are you sure you want to delete ${label}?`)) {
+    return; // Stop if the user clicks "Cancel"
+  }
+
+  try {
+    // 3. Make the actual DELETE request to your Express server.js backend
+    await api('DELETE', '/api/employees/' + encodeURIComponent(id));
+    
+    // 4. Refresh the data table automatically upon a successful delete
+    await loadRows();
+  } catch (err) {
+    alert('Failed to delete record: ' + err.message);
+  }
+}
 
     loadRows();
   </script>
