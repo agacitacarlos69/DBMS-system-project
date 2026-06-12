@@ -56,7 +56,7 @@ app.get('/api/employees', async (req, res) => {
                 status, 
                 mgmt_id 
             FROM Employee 
-            ORDER BY emp_id ASC;
+            ORDER BY mgmt_id ASC;
         `);
         res.json(result.rows);
     } catch (err) {
