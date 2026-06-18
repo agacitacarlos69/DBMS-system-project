@@ -26,7 +26,6 @@
         <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
         <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
         <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
-        <a href="lookups.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Lookups</a>
       </div>
     </nav>
   </header>
@@ -259,20 +258,18 @@
     });
 
     async function deleteRow(id) {
-  // 1. Find the employee details from the local array to make a friendly confirmation message
+  
   const r = rows.find((x) => String(x.emp_id) === String(id));
   const label = r ? `${r.full_name} (${r.emp_id})` : `Employee ${id}`;
   
-  // 2. Use a standard native browser alert confirmation box
+ 
   if (!confirm(`Are you sure you want to delete ${label}?`)) {
-    return; // Stop if the user clicks "Cancel"
+    return; 
   }
 
   try {
-    // 3. Make the actual DELETE request to your Express server.js backend
     await api('DELETE', '/api/employees/' + encodeURIComponent(id));
     
-    // 4. Refresh the data table automatically upon a successful delete
     await loadRows();
   } catch (err) {
     alert('Failed to delete record: ' + err.message);
