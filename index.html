@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EMS — Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="mock.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
   <header class="bg-slate-900 text-slate-100">
@@ -27,7 +26,6 @@
         <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
         <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
         <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
-        <a href="lookups.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Lookups</a>
       </div>
     </nav>
   </header>
@@ -36,6 +34,37 @@
     <h1 class="mb-1 text-2xl font-bold text-slate-800">Dashboard</h1>
     <p class="mb-6 text-sm text-slate-500">Quick overview of all records.</p>
     <div id="cards" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
+
+    <!-- ===== Employee Summary Table ===== -->
+    <section class="mt-10">
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">Employee Summary</h2>
+          <p class="text-sm text-slate-500">Team Leads, SMEs, Trainings, Shifts, Rooms &amp; Management — up to 30 employees.</p>
+        </div>
+        <input id="summarySearch" placeholder="Search employees…" class="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+      </div>
+      <div class="mb-2 text-right text-sm text-slate-500"><span id="summaryCount"></span></div>
+      <div class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <tr>
+              <th class="px-4 py-3">EMP_ID</th>
+              <th class="px-4 py-3">Name</th>
+              <th class="px-4 py-3">Role</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Management</th>
+              <th class="px-4 py-3">Team Lead</th>
+              <th class="px-4 py-3">SME</th>
+              <th class="px-4 py-3">Training</th>
+              <th class="px-4 py-3">Shift</th>
+              <th class="px-4 py-3">Room</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
   <script>
     const API = 'http://localhost:5000';
@@ -83,6 +112,59 @@
         card.querySelector('[data-count]').textContent = items.length;
       }).catch(() => { card.querySelector('[data-count]').textContent = '?'; });
     });
+
+    /* ===== Employee Summary Table ===== */
+    let summaryRows = [];
+
+    function statusBadge(v) {
+      if (v === 'Active') return 'bg-green-50 text-green-700 ring-green-200';
+      if (v === 'Inactive') return 'bg-slate-100 text-slate-600 ring-slate-200';
+      if (v === 'On Leave') return 'bg-amber-50 text-amber-700 ring-amber-200';
+      if (v === 'Terminated') return 'bg-red-50 text-red-700 ring-red-200';
+      return 'bg-slate-50 text-slate-700 ring-slate-200';
+    }
+
+    function dash(v) { return (v === null || v === undefined || v === '') ? '—' : esc(v); }
+
+    function renderSummary() {
+      const q = document.getElementById('summarySearch').value.trim().toLowerCase();
+      const keys = ['emp_id','full_name','role','status','mgmt_id','tlead_name','sme_name','training_id','shift_value','room_name'];
+      const filtered = !q ? summaryRows : summaryRows.filter((r) => keys.some((k) => String(r[k] ?? '').toLowerCase().includes(q)));
+      document.getElementById('summaryCount').textContent = `${filtered.length} employee(s)`;
+      const tbody = document.getElementById('summaryBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filtered.map((r) => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 font-mono">${dash(r.emp_id)}</td>
+          <td class="px-4 py-3">${dash(r.full_name)}</td>
+          <td class="px-4 py-3">${dash(r.role)}</td>
+          <td class="px-4 py-3"><span class="rounded-full px-2 py-0.5 text-xs ring-1 ring-inset ${statusBadge(r.status)}">${dash(r.status)}</span></td>
+          <td class="px-4 py-3 font-mono">${dash(r.mgmt_id)}</td>
+          <td class="px-4 py-3">${dash(r.tlead_name)}</td>
+          <td class="px-4 py-3">${dash(r.sme_name)}</td>
+          <td class="px-4 py-3 font-mono">${dash(r.training_id)}</td>
+          <td class="px-4 py-3">${dash(r.shift_value)}</td>
+          <td class="px-4 py-3">${dash(r.room_name)}</td>
+        </tr>`).join('');
+    }
+
+    async function loadSummary() {
+      const tbody = document.getElementById('summaryBody');
+      tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-500">Loading…</td></tr>`;
+      try {
+        const data = await api('GET', '/api/dashboard/summary');
+        summaryRows = Array.isArray(data) ? data : (data.items || []);
+        renderSummary();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
+      }
+    }
+
+    document.getElementById('summarySearch').addEventListener('input', renderSummary);
+    loadSummary();
   </script>
 </body>
 </html>
