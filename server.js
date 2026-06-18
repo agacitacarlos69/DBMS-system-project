@@ -26,14 +26,26 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 /* ====================================================
-    MOCK AUTHENTICATION ENDPOINT
+    MANAGER AUTHENTICATION ENDPOINT
+    Validates the login against a single manager
+    credential held in the .env file
+    (MANAGER_USERNAME / MANAGER_PASSWORD).
 ==================================================== */
+const MANAGER_USERNAME = process.env.MANAGER_USERNAME || 'MN100205';
+const MANAGER_PASSWORD = process.env.MANAGER_PASSWORD || 'Manager@123';
+
 app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
     try {
+        if (!username || !password) {
+            return res.status(400).json({ message: "Username and password are required." });
+        }
+        if (username !== MANAGER_USERNAME || password !== MANAGER_PASSWORD) {
+            return res.status(401).json({ message: "Invalid username or password." });
+        }
         res.json({
             token: "mock-jwt-token-xyz-123",
-            user: { username: username || "admin", role: "Manager" }
+            user: { username: MANAGER_USERNAME, role: "Manager" }
         });
     } catch (err) {
         res.status(500).json({ message: "Sign-in processing failure." });
@@ -106,17 +118,24 @@ app.delete('/api/employees/:id', async (req, res) => {
 
 
 /* ====================================================
-    USERS ENDPOINTS (random ahh wala pang user table)
+    USERS ENDPOINTS
+    emp_id is the username (used for login).
+    Passwords are bcrypt-hashed in the DB via pgcrypto
+    (crypt(... , gen_salt('bf'))). The users table trigger
+    auto-updates password_changed_at when password_hash changes.
 ==================================================== */
+const DEFAULT_PASSWORD = 'Password123!';
+
 app.get('/api/users', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
                 user_id, 
                 emp_id, 
-                username, 
                 email, 
-                date_time_created 
+                password_plain, 
+                date_time_created, 
+                password_changed_at 
             FROM Users 
             ORDER BY user_id ASC;
         `);
@@ -127,13 +146,14 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.post('/api/users', async (req, res) => {
-    const { emp_id, username, email, password } = req.body;
+    const { emp_id, email, password } = req.body;
+    const pw = password || DEFAULT_PASSWORD;
     try {
         const result = await pool.query(`
-            INSERT INTO Users (emp_id, username, email, password, date_time_created) 
-            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) 
+            INSERT INTO Users (emp_id, email, password_hash, password_plain) 
+            VALUES ($1, $2, crypt($3, gen_salt('bf')), $3) 
             RETURNING user_id;
-        `, [emp_id, username, email, password]);
+        `, [emp_id, email, pw]);
         res.status(201).json(result.rows[0]);
     } catch (err) { 
         res.status(500).json({ error: err.message }); 
@@ -142,20 +162,20 @@ app.post('/api/users', async (req, res) => {
 
 app.put('/api/users/:id', async (req, res) => {
     const { id } = req.params;
-    const { emp_id, username, email, password } = req.body;
+    const { emp_id, email, password } = req.body;
     try {
         if (password) {
             await pool.query(`
                 UPDATE Users 
-                SET emp_id = $1, username = $2, email = $3, password = $4 
-                WHERE user_id = $5;
-            `, [emp_id, username, email, password, id]);
+                SET emp_id = $1, email = $2, password_hash = crypt($3, gen_salt('bf')), password_plain = $3 
+                WHERE user_id = $4;
+            `, [emp_id, email, password, id]);
         } else {
             await pool.query(`
                 UPDATE Users 
-                SET emp_id = $1, username = $2, email = $3 
-                WHERE user_id = $4;
-            `, [emp_id, username, email, id]);
+                SET emp_id = $1, email = $2 
+                WHERE user_id = $3;
+            `, [emp_id, email, id]);
         }
         res.json({ message: 'User settings updated successfully' });
     } catch (err) { 
@@ -481,8 +501,40 @@ app.delete('/api/rooms/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/lookups', async (req, res) => {
-    res.json([]);
+/* ====================================================
+    DASHBOARD SUMMARY ENDPOINT
+    Returns up to 30 employees joined with their
+    Management, Team Lead, SME, Training, Shift and Room
+    for the dashboard summary table.
+==================================================== */
+app.get('/api/dashboard/summary', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                e.emp_id,
+                e.full_name,
+                e.role,
+                e.status,
+                m.mgmt_id,
+                tl.tlead_name,
+                s.sme_name,
+                t.training_id,
+                sh.shift_value,
+                r.room_name
+            FROM Employee e
+            LEFT JOIN Management m  ON e.mgmt_id    = m.mgmt_id
+            LEFT JOIN Team_Lead  tl ON m.tlead_id   = tl.tlead_id
+            LEFT JOIN SME        s  ON m.sme_id      = s.sme_id
+            LEFT JOIN Training   t  ON m.training_id = t.training_id
+            LEFT JOIN Shift      sh ON m.shift_id    = sh.shift_id
+            LEFT JOIN Room       r  ON sh.room_id    = r.room_id
+            ORDER BY e.emp_id ASC
+            LIMIT 30;
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.listen(PORT, () => {
