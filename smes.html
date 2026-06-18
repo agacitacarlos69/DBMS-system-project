@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EMS — SMEs</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="mock.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
   <header class="bg-slate-900 text-slate-100">
@@ -27,7 +26,6 @@
         <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
         <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
         <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
-        <a href="lookups.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Lookups</a>
       </div>
     </nav>
   </header>
@@ -219,11 +217,12 @@
     async function deleteRow(id) {
       const r = rows.find((x) => String(x.sme_id) === String(id));
       const label = r ? (r.sme_name + " (" + r.sme_id + ")") : 'smes ' + id;
+      if (!confirm(`Are you sure you want to delete ${label}?`)) return;
       try {
-        await window.emsDeleteWithCascade('smes', id, label);
+        await api('DELETE', '/api/smes/' + encodeURIComponent(id));
         await loadRows();
       } catch (err) {
-        if (err.message !== 'cancelled') alert(err.message);
+        alert('Failed to delete record: ' + err.message);
       }
     }
 
