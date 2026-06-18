@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EMS — Users</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="mock.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
   <header class="bg-slate-900 text-slate-100">
@@ -27,7 +26,6 @@
         <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
         <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
         <a href="users.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Users</a>
-        <a href="lookups.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Lookups</a>
       </div>
     </nav>
   </header>
@@ -47,9 +45,10 @@
           <tr>
             <th class="px-4 py-3">USER_ID</th>
             <th class="px-4 py-3">EMP_ID</th>
-            <th class="px-4 py-3">Username</th>
             <th class="px-4 py-3">Email</th>
+            <th class="px-4 py-3">Password</th>
             <th class="px-4 py-3">Created</th>
+            <th class="px-4 py-3">Password Changed</th>
             <th class="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
@@ -67,8 +66,6 @@
       <div class="grid grid-cols-1 gap-4 px-6 py-5 md:grid-cols-2">
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Employee *</label>
           <select name="emp_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select></div>
-        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Username *</label>
-          <input type="text" name="username" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Email *</label>
           <input type="email" name="email" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
@@ -119,19 +116,20 @@
 
     function render() {
       const q = document.getElementById('search').value.trim().toLowerCase();
-      const keys = ["user_id","emp_id","username","email","date_time_created"];
+      const keys = ["user_id","emp_id","email","password_plain","date_time_created","password_changed_at"];
       const filtered = !q ? rows : rows.filter((r) => keys.some((k) => String(r[k] ?? '').toLowerCase().includes(q)));
-      filtered.sort((a,b) => String(a.user_id).localeCompare(String(b.user_id)));
+      filtered.sort((a,b) => Number(a.user_id) - Number(b.user_id));
       document.getElementById('countLabel').textContent = `${filtered.length} record(s)`;
       const tbody = document.getElementById('tbody');
-      if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`; return; }
+      if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`; return; }
       tbody.innerHTML = filtered.map((r) => `
         <tr class="hover:bg-slate-50">
             <td class="px-4 py-3 font-mono">${esc(r.user_id)}</td>
             <td class="px-4 py-3">${esc(r.emp_id)}</td>
-            <td class="px-4 py-3">${esc(r.username)}</td>
             <td class="px-4 py-3">${esc(r.email)}</td>
+            <td class="px-4 py-3 font-mono">${esc(r.password_plain)}</td>
             <td class="px-4 py-3">${esc(fmtDT(r.date_time_created))}</td>
+            <td class="px-4 py-3">${esc(fmtDT(r.password_changed_at))}</td>
           <td class="px-4 py-3 text-right">
             <button data-act="edit" data-id="${esc(r.user_id)}" class="rounded bg-white px-2.5 py-1 text-xs ring-1 ring-slate-300 hover:bg-slate-50">Edit</button>
             <button data-act="del"  data-id="${esc(r.user_id)}" class="ml-1 rounded bg-red-600 px-2.5 py-1 text-xs text-white hover:bg-red-700">Delete</button>
@@ -152,7 +150,7 @@
         rows = Array.isArray(data) ? data : (data.items || []);
         render();
       } catch (e) {
-        document.getElementById('tbody').innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
       }
     }
 
@@ -192,8 +190,8 @@
         frm.elements.password.placeholder = 'leave blank to keep';
       } else {
 
-        frm.elements.password.required = true;
-        frm.elements.password.placeholder = '';
+        frm.elements.password.required = false;
+        frm.elements.password.placeholder = 'leave blank for default Password123!';
       }
       dlg.showModal();
     }
@@ -227,12 +225,13 @@
 
     async function deleteRow(id) {
       const r = rows.find((x) => String(x.user_id) === String(id));
-      const label = r ? ("user " + r.username) : 'users ' + id;
+      const label = r ? ("user " + r.emp_id) : 'users ' + id;
+      if (!confirm(`Are you sure you want to delete ${label}?`)) return;
       try {
-        await window.emsDeleteWithCascade('users', id, label);
+        await api('DELETE', '/api/users/' + encodeURIComponent(id));
         await loadRows();
       } catch (err) {
-        if (err.message !== 'cancelled') alert(err.message);
+        alert('Failed to delete record: ' + err.message);
       }
     }
 
