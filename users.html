@@ -7,33 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
-  <header class="bg-slate-900 text-slate-100">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-      <div class="text-lg font-bold">EMS<span class="text-blue-400">.</span> <span class="ml-2 text-sm font-normal text-slate-400">Manager Console</span></div>
-      <div class="flex items-center gap-3">
-        <span id="userLabel" class="text-sm text-slate-300"></span>
-        <button id="logoutBtn" class="rounded-lg bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Logout</button>
-      </div>
-    </div>
-    <nav class="border-t border-slate-800">
-      <div class="mx-auto flex max-w-7xl flex-wrap gap-1 px-6 py-2 text-sm">
-        <a href="index.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Dashboard</a>
-        <a href="employees.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Employees</a>
-        <a href="management.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Management</a>
-        <a href="team-leads.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Team Leads</a>
-        <a href="smes.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">SMEs</a>
-        <a href="trainings.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Trainings</a>
-        <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
-        <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
-        <a href="users.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Users</a>
-      </div>
-    </nav>
-  </header>
+  <div id="ems-nav"></div>
 
   <main class="mx-auto max-w-7xl p-6">
     <div class="mb-4 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-slate-800">Users</h1>
-      <button id="newBtn" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">+ New</button>
     </div>
     <div class="mb-3 flex items-center justify-between gap-2">
       <input id="search" placeholder="Search…" class="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -46,7 +24,6 @@
             <th class="px-4 py-3">USER_ID</th>
             <th class="px-4 py-3">EMP_ID</th>
             <th class="px-4 py-3">Email</th>
-            <th class="px-4 py-3">Password</th>
             <th class="px-4 py-3">Created</th>
             <th class="px-4 py-3">Password Changed</th>
             <th class="px-4 py-3 text-right">Actions</th>
@@ -68,8 +45,6 @@
           <select name="emp_id" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></select></div>
         <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Email *</label>
           <input type="email" name="email" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
-        <div class=""><label class="mb-1 block text-sm font-medium text-slate-700">Password</label>
-          <input type="password" name="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" /></div>
       </div>
       <div id="frmErr" class="mx-6 mb-3 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"></div>
       <div class="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-3">
@@ -78,13 +53,13 @@
       </div>
     </form>
   </dialog>
+  <script src="app.js"></script>
   <script>
     const API = 'http://localhost:5000';
     const token = localStorage.getItem('ems_token');
     if (!token) location.replace('login.html');
+    EMS.buildNav('users');
     const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
-    document.getElementById('userLabel').textContent = user.username || 'Manager';
-    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); location.href = 'login.html'; });
 
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function fmtDT(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleString(); }
@@ -101,7 +76,7 @@
       return data;
     }
 
-    let rows = []; let editingId = null; let editingPrev = null;
+    let rows = []; let editingId = null;
     const dlg = document.getElementById('dlg');
     const frm = document.getElementById('frm');
     const frmErr = document.getElementById('frmErr');
@@ -116,41 +91,53 @@
 
     function render() {
       const q = document.getElementById('search').value.trim().toLowerCase();
-      const keys = ["user_id","emp_id","email","password_plain","date_time_created","password_changed_at"];
+      const keys = ["user_id","emp_id","email","date_time_created","password_changed_at"];
       const filtered = !q ? rows : rows.filter((r) => keys.some((k) => String(r[k] ?? '').toLowerCase().includes(q)));
       filtered.sort((a,b) => Number(a.user_id) - Number(b.user_id));
       document.getElementById('countLabel').textContent = `${filtered.length} record(s)`;
       const tbody = document.getElementById('tbody');
-      if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`; return; }
+      if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`; return; }
       tbody.innerHTML = filtered.map((r) => `
         <tr class="hover:bg-slate-50">
             <td class="px-4 py-3 font-mono">${esc(r.user_id)}</td>
             <td class="px-4 py-3">${esc(r.emp_id)}</td>
-            <td class="px-4 py-3">${esc(r.email)}</td>
-            <td class="px-4 py-3 font-mono">${esc(r.password_plain)}</td>
+            <td class="px-4 py-3 font-mono">${esc(r.email)}</td>
             <td class="px-4 py-3">${esc(fmtDT(r.date_time_created))}</td>
             <td class="px-4 py-3">${esc(fmtDT(r.password_changed_at))}</td>
           <td class="px-4 py-3 text-right">
             <button data-act="edit" data-id="${esc(r.user_id)}" class="rounded bg-white px-2.5 py-1 text-xs ring-1 ring-slate-300 hover:bg-slate-50">Edit</button>
-            <button data-act="del"  data-id="${esc(r.user_id)}" class="ml-1 rounded bg-red-600 px-2.5 py-1 text-xs text-white hover:bg-red-700">Delete</button>
+            <button data-act="reset" data-id="${esc(r.user_id)}" class="ml-1 rounded bg-amber-500 px-2.5 py-1 text-xs text-white hover:bg-amber-600">Reset Password</button>
           </td>
         </tr>`).join('');
       tbody.querySelectorAll('button[data-act]').forEach((b) => {
         b.addEventListener('click', () => {
           const id = b.getAttribute('data-id');
-          if (b.getAttribute('data-act') === 'edit') openForm(rows.find((x) => String(x.user_id) === id));
-          else deleteRow(id);
+          const act = b.getAttribute('data-act');
+          if (act === 'edit') openForm(rows.find((x) => String(x.user_id) === id));
+          if (act === 'reset') resetPassword(id);
         });
       });
     }
 
+    async function resetPassword(id) {
+      const row = rows.find((x) => String(x.user_id) === String(id));
+      const label = row ? ([row.emp_id, row.email].filter(Boolean).join(' / ') || ('user ' + id)) : ('user ' + id);
+      if (!confirm('Reset the password for this user? A new password will be generated.')) return;
+      try {
+        const r = await api('POST', '/api/users/' + encodeURIComponent(id) + '/reset-password');
+        EMS.toast(`New password for ${label}: ${r.new_password}\n(Copy it now — it will not be shown again.)`, 'success', 12000);
+        await loadRows();
+      } catch (err) {
+        EMS.toast(err.message, 'error');
+      }
+    }
     async function loadRows() {
       try {
         const data = await api('GET', '/api/users');
         rows = Array.isArray(data) ? data : (data.items || []);
         render();
       } catch (e) {
-        document.getElementById('tbody').innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
       }
     }
 
@@ -172,8 +159,7 @@
 
     async function openForm(row) {
       editingId = row ? row.user_id : null;
-      editingPrev = row ? Object.assign({}, row) : null;
-      document.getElementById('dlgTitle').textContent = row ? 'Edit User' : 'New User';
+      document.getElementById('dlgTitle').textContent = 'Edit User';
       frmErr.classList.add('hidden'); frmErr.textContent = '';
       frm.reset();
       await loadFKs();
@@ -182,58 +168,35 @@
           const el = frm.elements[k];
           if (!el || el.type === 'file') return;
           if (el.type === 'datetime-local') return;
-          if (k === 'password') return;
           el.value = row[k] ?? '';
         });
 
-        frm.elements.password.required = false;
-        frm.elements.password.placeholder = 'leave blank to keep';
-      } else {
-
-        frm.elements.password.required = false;
-        frm.elements.password.placeholder = 'leave blank for default Password123!';
       }
       dlg.showModal();
     }
 
-    document.getElementById('newBtn').addEventListener('click', () => openForm(null));
+
     document.getElementById('cancelBtn').addEventListener('click', () => dlg.close());
     document.getElementById('closeBtn').addEventListener('click', () => dlg.close());
     document.getElementById('search').addEventListener('input', render);
 
     frm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!EMS.confirmEdit('Are you sure you want to save changes to this user?')) return;
       frmErr.classList.add('hidden');
       const fd = new FormData(frm);
       const body = {};
       fd.forEach((v, k) => { body[k] = v === '' ? null : v; });
 
-      const pw = frm.elements.password.value;
-      if (pw) body.password = pw; else delete body.password;
 
       const saveBtn = document.getElementById('saveBtn');
       saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
       try {
-
-        let saved;
-        if (editingId == null) saved = await api('POST', '/api/users', body);
-        else saved = await api('PUT', '/api/users/' + encodeURIComponent(editingId), body);
+        await api('PUT', '/api/users/' + encodeURIComponent(editingId), body);
         dlg.close(); await loadRows();
       } catch (err) { frmErr.textContent = err.message; frmErr.classList.remove('hidden'); }
       finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
     });
-
-    async function deleteRow(id) {
-      const r = rows.find((x) => String(x.user_id) === String(id));
-      const label = r ? ("user " + r.emp_id) : 'users ' + id;
-      if (!confirm(`Are you sure you want to delete ${label}?`)) return;
-      try {
-        await api('DELETE', '/api/users/' + encodeURIComponent(id));
-        await loadRows();
-      } catch (err) {
-        alert('Failed to delete record: ' + err.message);
-      }
-    }
 
     loadRows();
   </script>
