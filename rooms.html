@@ -7,28 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
-  <header class="bg-slate-900 text-slate-100">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-      <div class="text-lg font-bold">EMS<span class="text-blue-400">.</span> <span class="ml-2 text-sm font-normal text-slate-400">Manager Console</span></div>
-      <div class="flex items-center gap-3">
-        <span id="userLabel" class="text-sm text-slate-300"></span>
-        <button id="logoutBtn" class="rounded-lg bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Logout</button>
-      </div>
-    </div>
-    <nav class="border-t border-slate-800">
-      <div class="mx-auto flex max-w-7xl flex-wrap gap-1 px-6 py-2 text-sm">
-        <a href="index.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Dashboard</a>
-        <a href="employees.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Employees</a>
-        <a href="management.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Management</a>
-        <a href="team-leads.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Team Leads</a>
-        <a href="smes.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">SMEs</a>
-        <a href="trainings.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Trainings</a>
-        <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
-        <a href="rooms.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Rooms</a>
-        <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
-      </div>
-    </nav>
-  </header>
+  <div id="ems-nav"></div>
 
   <main class="mx-auto max-w-7xl p-6">
     <div class="mb-4 flex items-center justify-between">
@@ -72,13 +51,13 @@
       </div>
     </form>
   </dialog>
+  <script src="app.js"></script>
   <script>
     const API = 'http://localhost:5000';
     const token = localStorage.getItem('ems_token');
     if (!token) location.replace('login.html');
+    EMS.buildNav('rooms');
     const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
-    document.getElementById('userLabel').textContent = user.username || 'Manager';
-    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); location.href = 'login.html'; });
 
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function fmtDT(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleString(); }
@@ -177,6 +156,7 @@
 
     frm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (editingId != null && !EMS.confirmEdit()) return;
       frmErr.classList.add('hidden');
       const fd = new FormData(frm);
       const body = {};
