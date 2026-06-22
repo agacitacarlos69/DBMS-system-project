@@ -7,36 +7,29 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 text-slate-800">
-  <header class="bg-slate-900 text-slate-100">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-      <div class="text-lg font-bold">EMS<span class="text-blue-400">.</span> <span class="ml-2 text-sm font-normal text-slate-400">Manager Console</span></div>
-      <div class="flex items-center gap-3">
-        <span id="userLabel" class="text-sm text-slate-300"></span>
-        <button id="logoutBtn" class="rounded-lg bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Logout</button>
-      </div>
-    </div>
-    <nav class="border-t border-slate-800">
-      <div class="mx-auto flex max-w-7xl flex-wrap gap-1 px-6 py-2 text-sm">
-        <a href="index.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Dashboard</a>
-        <a href="employees.html" class="rounded px-3 py-1.5 bg-blue-600 text-white">Employees</a>
-        <a href="management.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Management</a>
-        <a href="team-leads.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Team Leads</a>
-        <a href="smes.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">SMEs</a>
-        <a href="trainings.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Trainings</a>
-        <a href="shifts.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Shifts</a>
-        <a href="rooms.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Rooms</a>
-        <a href="users.html" class="rounded px-3 py-1.5 text-slate-300 hover:bg-slate-800">Users</a>
-      </div>
-    </nav>
-  </header>
+  <div id="ems-nav"></div>
 
   <main class="mx-auto max-w-7xl p-6">
     <div class="mb-4 flex items-center justify-between">
       <h1 class="text-2xl font-bold text-slate-800">Employees</h1>
       <button id="newBtn" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">+ New</button>
     </div>
-    <div class="mb-3 flex items-center justify-between gap-2">
-      <input id="search" placeholder="Search…" class="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-1 flex-wrap gap-2">
+        <input id="search" placeholder="Search ID / email / contact…" class="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        <input id="nameFilter" placeholder="Filter by name…" class="w-full max-w-xs rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+        <select id="roleFilter" class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="">All roles</option>
+        </select>
+        <select id="statusFilter" class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <select id="tenurityFilter" class="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="">All tenurities</option>
+        </select>
+      </div>
       <div id="countLabel" class="text-sm text-slate-500"></div>
     </div>
     <div class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -44,7 +37,7 @@
         <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
           <tr>
             <th class="px-4 py-3">EMP_ID</th>
-            <th class="px-4 py-3">Name</th>
+            <th id="nameSort" class="cursor-pointer select-none px-4 py-3">Name <span id="nameSortIcon" class="ml-1">▲</span></th>
             <th class="px-4 py-3">Mgmt</th>
             <th class="px-4 py-3">Role</th>
             <th class="px-4 py-3">Tenurity</th>
@@ -54,6 +47,12 @@
         </thead>
         <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
       </table>
+    </div>
+    <div class="mt-3 flex flex-wrap items-center justify-end gap-3 text-sm text-slate-600">
+      <button id="prevPage" class="rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
+      <span id="pageLabel">Page 1 of 1</span>
+      <button id="nextPage" class="rounded-lg bg-white px-3 py-1.5 ring-1 ring-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+      <span id="totalLabel" class="text-slate-500">(0 records)</span>
     </div>
   </main>
 
@@ -88,13 +87,13 @@
       </div>
     </form>
   </dialog>
+  <script src="app.js"></script>
   <script>
     const API = 'http://localhost:5000';
     const token = localStorage.getItem('ems_token');
     if (!token) location.replace('login.html');
+    EMS.buildNav('employees');
     const user = JSON.parse(localStorage.getItem('ems_user') || '{}');
-    document.getElementById('userLabel').textContent = user.username || 'Manager';
-    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); location.href = 'login.html'; });
 
     function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function fmtDT(v) { if (!v) return ''; const d = new Date(v); return isNaN(d) ? String(v) : d.toLocaleString(); }
@@ -112,6 +111,7 @@
     }
 
     let rows = []; let editingId = null; let editingPrev = null;
+    let currentPage = 1; const pageSize = 10; let nameSortDir = 'asc';
     const dlg = document.getElementById('dlg');
     const frm = document.getElementById('frm');
     const frmErr = document.getElementById('frmErr');
@@ -122,15 +122,60 @@
       return 'bg-slate-50 text-slate-700 ring-slate-200';
     }
 
-    function render() {
-      const q = document.getElementById('search').value.trim().toLowerCase();
-      const keys = ["emp_id","full_name","mgmt_id","role","tenurity","status"];
-      const filtered = !q ? rows : rows.filter((r) => keys.some((k) => String(r[k] ?? '').toLowerCase().includes(q)));
-      filtered.sort((a,b) => String(a.emp_id).localeCompare(String(b.emp_id)));
+    function getFilterValue(id) { return document.getElementById(id).value.trim(); }
+
+    function populateFilterOptions() {
+      const unique = (key) => [...new Set(rows.map((r) => r[key]).filter((v) => v != null && String(v).trim() !== '').map(String))].sort((a,b) => a.localeCompare(b));
+      const build = (id, label, values) => {
+        const sel = document.getElementById(id);
+        const prev = sel.value;
+        sel.innerHTML = `<option value="">${label}</option>`;
+        values.forEach((value) => {
+          const opt = document.createElement('option');
+          opt.value = value; opt.textContent = value;
+          sel.appendChild(opt);
+        });
+        sel.value = values.includes(prev) ? prev : '';
+      };
+      const statuses = ['Active', 'Inactive', ...unique('status').filter((v) => v !== 'Active' && v !== 'Inactive')];
+      build('roleFilter', 'All roles', unique('role'));
+      build('statusFilter', 'All statuses', statuses);
+      build('tenurityFilter', 'All tenurities', unique('tenurity'));
+    }
+
+    function render(resetPage = false) {
+      if (resetPage) currentPage = 1;
+      const q = getFilterValue('search').toLowerCase();
+      const nameQ = getFilterValue('nameFilter').toLowerCase();
+      const role = getFilterValue('roleFilter');
+      const status = getFilterValue('statusFilter');
+      const tenurity = getFilterValue('tenurityFilter');
+      const searchKeys = ["emp_id","personal_email","contact_number","mgmt_id"];
+      const filtered = rows.filter((r) => {
+        const matchesSearch = !q || searchKeys.some((k) => String(r[k] ?? '').toLowerCase().includes(q));
+        const matchesName = !nameQ || String(r.full_name ?? '').toLowerCase().includes(nameQ);
+        const matchesRole = !role || String(r.role ?? '') === role;
+        const matchesStatus = !status || String(r.status ?? '') === status;
+        const matchesTenurity = !tenurity || String(r.tenurity ?? '') === tenurity;
+        return matchesSearch && matchesName && matchesRole && matchesStatus && matchesTenurity;
+      });
+      filtered.sort((a,b) => {
+        const byName = String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), undefined, { sensitivity: 'base' });
+        const primary = nameSortDir === 'asc' ? byName : -byName;
+        return primary || String(a.emp_id ?? '').localeCompare(String(b.emp_id ?? ''));
+      });
+      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
       document.getElementById('countLabel').textContent = `${filtered.length} record(s)`;
+      document.getElementById('pageLabel').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('totalLabel').textContent = `(${filtered.length} records)`;
+      document.getElementById('prevPage').disabled = currentPage <= 1;
+      document.getElementById('nextPage').disabled = currentPage >= totalPages;
+      document.getElementById('nameSortIcon').textContent = nameSortDir === 'asc' ? '▲' : '▼';
       const tbody = document.getElementById('tbody');
       if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No records.</td></tr>`; return; }
-      tbody.innerHTML = filtered.map((r) => `
+      tbody.innerHTML = pageRows.map((r) => `
         <tr class="hover:bg-slate-50">
             <td class="px-4 py-3 font-mono">${esc(r.emp_id)}</td>
             <td class="px-4 py-3">${esc(r.full_name)}</td>
@@ -156,6 +201,7 @@
       try {
         const data = await api('GET', '/api/employees');
         rows = Array.isArray(data) ? data : (data.items || []);
+        populateFilterOptions();
         render();
       } catch (e) {
         document.getElementById('tbody').innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-600">${esc(e.message)}</td></tr>`;
@@ -232,10 +278,22 @@
     document.getElementById('newBtn').addEventListener('click', () => openForm(null));
     document.getElementById('cancelBtn').addEventListener('click', () => dlg.close());
     document.getElementById('closeBtn').addEventListener('click', () => dlg.close());
-    document.getElementById('search').addEventListener('input', render);
+    ['search', 'nameFilter'].forEach((id) => document.getElementById(id).addEventListener('input', () => render(true)));
+    ['roleFilter', 'statusFilter', 'tenurityFilter'].forEach((id) => document.getElementById(id).addEventListener('change', () => render(true)));
+    document.getElementById('nameSort').addEventListener('click', () => {
+      nameSortDir = nameSortDir === 'asc' ? 'desc' : 'asc';
+      render(true);
+    });
+    document.getElementById('prevPage').addEventListener('click', () => {
+      if (currentPage > 1) { currentPage--; render(); }
+    });
+    document.getElementById('nextPage').addEventListener('click', () => {
+      currentPage++; render();
+    });
 
     frm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (editingId != null && !EMS.confirmEdit('Are you sure you want to save changes to this employee?')) return;
       frmErr.classList.add('hidden');
       const fd = new FormData(frm);
       const body = {};
@@ -258,18 +316,20 @@
     });
 
     async function deleteRow(id) {
-  
+  // 1. Find the employee details from the local array to make a friendly confirmation message
   const r = rows.find((x) => String(x.emp_id) === String(id));
   const label = r ? `${r.full_name} (${r.emp_id})` : `Employee ${id}`;
   
- 
+  // 2. Use a standard native browser alert confirmation box
   if (!confirm(`Are you sure you want to delete ${label}?`)) {
-    return; 
+    return; // Stop if the user clicks "Cancel"
   }
 
   try {
+    // 3. Make the actual DELETE request to your Express server.js backend
     await api('DELETE', '/api/employees/' + encodeURIComponent(id));
     
+    // 4. Refresh the data table automatically upon a successful delete
     await loadRows();
   } catch (err) {
     alert('Failed to delete record: ' + err.message);
